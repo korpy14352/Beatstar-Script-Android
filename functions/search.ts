@@ -4,8 +4,8 @@ import * as autoplay from "./autoplay.js";
 import Java from "frida-java-bridge";
 import Device from "../lib/Device.js";
 import { writeFileToDevice } from "../lib/Utilities.js";
-import SettingsReader from "../lib/SettingsReader.js";
 import { unlockAllSongs } from "../utilities/unlockAllSongs.js";
+import { unlockCustomSongs } from "../utilities/unlockCustomSongs.js";
 
 export const search = () => {
   const assembly = Il2Cpp.domain.assembly("Assembly-CSharp").image;
@@ -13,7 +13,6 @@ export const search = () => {
   assembly
     .class("SongCollection_SearchElement")
     .method("UpdateInputFilledState").implementation = function () {
-    console.log(SettingsReader.getSetting("alternateUnlock"));
     const input = this.field("inputField").value as Il2Cpp.Object;
     const text = input.field("m_Text").value as Il2Cpp.String;
     const searchTerm = text.toString().slice(1, -1);
@@ -28,7 +27,8 @@ export const search = () => {
       Device.toast(Device.getAndroidId());
     } else if (searchTerm == "unlock") {
       unlockAllSongs();
-    } else if (searchTerm === "cunlock") {
+    } else if (searchTerm == "cunlock") {
+      unlockCustomSongs();
     } else if (searchTerm == "dump") {
       Device.toast("Starting dump...");
 

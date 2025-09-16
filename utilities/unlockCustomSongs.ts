@@ -14,6 +14,7 @@ import { hookRemoteBundles } from "../customs/hookRemoteBundles.js";
 import Translation from "../lib/Translation.js";
 import { songNameHack } from "../hacks/songName.js";
 import { scoreToMedal } from "../lib/Utilities.js";
+import Device from "../lib/Device.js";
 
 export const unlockCustomSongs = async () => {
   const RakshaModel = Il2Cpp.domain.assembly("RakshaModel").image;
@@ -128,6 +129,7 @@ export const unlockCustomSongs = async () => {
   translations.field("translations").value = newTranslations;
 
   applyCustomSongScores();
+  Device.toast("Custom songs unlocked.");
 };
 
 const applyCustomSongScores = () => {
