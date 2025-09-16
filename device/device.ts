@@ -9,6 +9,7 @@ import { fakeVersion } from "../functions/fakeVersion.js";
 import { search } from "../functions/search.js";
 import { hookSettingsButton } from "../hacks/hookSettingsButton.js";
 import { hookSupportButton } from "../hacks/hookSupportButton.js";
+import { saveProfile } from "../utilities/saveProfile.js";
 
 Il2Cpp.perform(async () => {
   if (SettingsReader.getSetting("fakeVersion")) {
@@ -30,4 +31,5 @@ Il2Cpp.perform(async () => {
   lengthFixer();
   hookGraphics();
   search();
+  saveProfile();
 });
