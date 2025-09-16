@@ -26,28 +26,10 @@ export const search = () => {
       Device.toast(autoplay.getStatus());
     } else if (searchTerm == "link") {
       Device.toast(Device.getAndroidId());
-    } else if (
-      searchTerm == "unlock" &&
-      SettingsReader.getSetting("alternateUnlock") === "true"
-    ) {
+    } else if (searchTerm == "unlock") {
       unlockAllSongs();
-    } /*else if (searchTerm.endsWith("link")) {
-      const username = searchTerm.split(" ").slice(0, -1).join(" ");
-      if (username.trim().length === 0) {
-        return;
-      }
-
-      deviceNetworkRequest("/link", {
-        androidId: Device.getAndroidId(),
-        username,
-        key: encryptAndroidId(),
-      }).then(function (response) {
-        const success = JSON.parse(response).success;
-        Device.toast(
-          success ? "Set your username." : "Failed to set username."
-        );
-      });
-    }*/ else if (searchTerm == "dump") {
+    } else if (searchTerm === "cunlock") {
+    } else if (searchTerm == "dump") {
       Device.toast("Starting dump...");
 
       const file = Java.use("java.io.File");

@@ -8,132 +8,126 @@ import {
   scores,
 } from "../lib/Globals.js";
 import { activateMod } from "../utilities/activateMod.js";
-import { songNameHack } from "./songName.js";
 import { hookOnDeviceBundles } from "../customs/hookOnDeviceBundles.js";
 import { ignoreBundleHash } from "../customs/ignoreBundleHash.js";
 import { hookRemoteBundles } from "../customs/hookRemoteBundles.js";
 import Translation from "../lib/Translation.js";
+import { songNameHack } from "../hacks/songName.js";
 import { scoreToMedal } from "../lib/Utilities.js";
 
 export const unlockCustomSongs = async () => {
-  const assembly = Il2Cpp.domain.assembly("Assembly-CSharp").image;
+  const RakshaModel = Il2Cpp.domain.assembly("RakshaModel").image;
+  const lang = Il2Cpp.domain.assembly("SpaceApe.Lang").image;
+  const metalogic = Il2Cpp.domain.assembly("MetaLogic").image;
 
-  assembly
-    .class("OptionsDialog")
-    .method("SupportButtonPressed").implementation = async function () {
-    const RakshaModel = Il2Cpp.domain.assembly("RakshaModel").image;
-    const lang = Il2Cpp.domain.assembly("SpaceApe.Lang").image;
-    const metalogic = Il2Cpp.domain.assembly("MetaLogic").image;
+  activateMod();
 
-    activateMod();
+  setDataCache(new DataCache(RakshaModel));
 
-    setDataCache(new DataCache(RakshaModel));
+  songNameHack();
+  hookOnDeviceBundles();
+  ignoreBundleHash();
+  hookRemoteBundles();
 
-    songNameHack();
-    hookOnDeviceBundles();
-    ignoreBundleHash();
-    hookRemoteBundles();
+  //get the lang config to set the translations later
+  const translations = Il2Cpp.gc.choose(
+    lang.class("com.spaceape.sharedlang.LangConfig")
+  )[0];
 
-    //get the lang config to set the translations later
-    const translations = Il2Cpp.gc.choose(
-      lang.class("com.spaceape.sharedlang.LangConfig")
-    )[0];
+  const tr = translations.field("translations").value as Il2Cpp.Array;
+  const locale = (
+    (
+      (tr.get(0) as Il2Cpp.Object).field("translations").value as Il2Cpp.Array
+    ).get(0) as Il2Cpp.Object
+  )
+    .field("key")
+    .value.toString()
+    .slice(1, -1);
 
-    const tr = translations.field("translations").value as Il2Cpp.Array;
-    const locale = (
-      (
-        (tr.get(0) as Il2Cpp.Object).field("translations").value as Il2Cpp.Array
-      ).get(0) as Il2Cpp.Object
-    )
-      .field("key")
-      .value.toString()
-      .slice(1, -1);
+  //read custom songs
+  let reader = new CustomSongReader(dataCache);
+  setCustomSongs(await reader.readCustomSongsOnDevice());
 
-    //read custom songs
-    let reader = new CustomSongReader(dataCache);
-    setCustomSongs(await reader.readCustomSongsOnDevice());
+  //each song has a name and artist we need to add
+  const newLength = tr.length + customSongs.length * 2;
 
-    //each song has a name and artist we need to add
-    const newLength = tr.length + customSongs.length * 2;
+  //create a new array with the new size and copy the old values into the new
+  const newTranslations = Il2Cpp.array(
+    lang.class("com.spaceape.sharedlang.Translation"),
+    newLength
+  ) as Il2Cpp.Array;
+  for (var i = 0; i < tr.length; i++) {
+    newTranslations.set(i, tr.get(i));
+  }
 
-    //create a new array with the new size and copy the old values into the new
-    const newTranslations = Il2Cpp.array(
-      lang.class("com.spaceape.sharedlang.Translation"),
-      newLength
-    ) as Il2Cpp.Array;
-    for (var i = 0; i < tr.length; i++) {
-      newTranslations.set(i, tr.get(i));
-    }
+  //simplify the process with an index for where to add new values
+  let index = tr.length;
 
-    //simplify the process with an index for where to add new values
-    let index = tr.length;
+  let unlockSongProcess = Il2Cpp.gc.choose(
+    metalogic.class("UnlockSongProcess")
+  )[0];
+  let userBeatmaps = Il2Cpp.gc.choose(
+    metalogic.class("com.spaceape.flamingo.model.UserBeatmaps")
+  )[0];
+  let transaction = userBeatmaps
+    .method("CreateTransaction")
+    .invoke(
+      RakshaModel.class(
+        "com.spaceape.flamingo.model.BeatmapRewardSource"
+      ).field("CardCase").value
+    ) as Il2Cpp.Object;
 
-    let unlockSongProcess = Il2Cpp.gc.choose(
-      metalogic.class("UnlockSongProcess")
-    )[0];
-    let userBeatmaps = Il2Cpp.gc.choose(
-      metalogic.class("com.spaceape.flamingo.model.UserBeatmaps")
-    )[0];
-    let transaction = userBeatmaps
-      .method("CreateTransaction")
-      .invoke(
-        RakshaModel.class(
-          "com.spaceape.flamingo.model.BeatmapRewardSource"
-        ).field("CardCase").value
-      ) as Il2Cpp.Object;
+  const promises: Promise<void>[] = [];
 
-    const promises: Promise<void>[] = [];
-
-    for (var x = 0; x < customSongs.length; x++) {
-      promises.push(
-        new Promise((resolve, reject) => {
-          unlockSongProcess
-            .method("Cmd_UnlockSong")
-            .invoke(
-              customSongs[x].template,
-              RakshaModel.class(
-                "com.spaceape.flamingo.model.BeatmapRewardSource"
-              ).field("CardCase").value,
-              transaction,
-              transaction
-            );
-
-          //create the new translations
-          const nameTranslation = new Translation(
-            customSongs[x].template
-              .field("_Song")
-              .value.field("SongTitleLoc_id")
-              .value.toString()
-              .slice(1, -1),
-            customSongs[x].title,
-            locale
+  for (var x = 0; x < customSongs.length; x++) {
+    promises.push(
+      new Promise((resolve, reject) => {
+        unlockSongProcess
+          .method("Cmd_UnlockSong")
+          .invoke(
+            customSongs[x].template,
+            RakshaModel.class(
+              "com.spaceape.flamingo.model.BeatmapRewardSource"
+            ).field("CardCase").value,
+            transaction,
+            transaction
           );
 
-          const artistTranslation = new Translation(
-            customSongs[x].template
-              .field("_Song")
-              .value.field("SongArtistLoc_id")
-              .value.toString()
-              .slice(1, -1),
-            customSongs[x].artist,
-            locale
-          );
+        //create the new translations
+        const nameTranslation = new Translation(
+          customSongs[x].template
+            .field("_Song")
+            .value.field("SongTitleLoc_id")
+            .value.toString()
+            .slice(1, -1),
+          customSongs[x].title,
+          locale
+        );
 
-          //add them in
-          newTranslations.set(index++, nameTranslation.build());
-          newTranslations.set(index++, artistTranslation.build());
-          resolve();
-        })
-      );
-    }
+        const artistTranslation = new Translation(
+          customSongs[x].template
+            .field("_Song")
+            .value.field("SongArtistLoc_id")
+            .value.toString()
+            .slice(1, -1),
+          customSongs[x].artist,
+          locale
+        );
 
-    await Promise.all(promises);
+        //add them in
+        newTranslations.set(index++, nameTranslation.build());
+        newTranslations.set(index++, artistTranslation.build());
+        resolve();
+      })
+    );
+  }
 
-    //set the new translations
-    translations.field("translations").value = newTranslations;
+  await Promise.all(promises);
 
-    applyCustomSongScores();
-  };
+  //set the new translations
+  translations.field("translations").value = newTranslations;
+
+  applyCustomSongScores();
 };
 
 const applyCustomSongScores = () => {
