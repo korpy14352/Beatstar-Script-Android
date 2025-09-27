@@ -10,8 +10,10 @@ import { search } from "../functions/search.js";
 import { hookSettingsButton } from "../hacks/hookSettingsButton.js";
 import { hookSupportButton } from "../hacks/hookSupportButton.js";
 import { saveProfile } from "../utilities/saveProfile.js";
+import { customServer } from "../utilities/customServer.js";
 
 Il2Cpp.perform(async () => {
+  customServer();
   if (SettingsReader.getSetting("fakeVersion")) {
     fakeVersion();
   }

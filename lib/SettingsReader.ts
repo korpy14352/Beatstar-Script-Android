@@ -9,10 +9,8 @@ export interface Color {
 }
 
 interface Settings {
-  gameIp: string;
-  gamePort?: number;
-  ip?: string;
-  port?: number;
+  serverIp?: string;
+  serverPort?: number;
   graphics?: "low" | "med" | "high" | "high_120";
   delay?: number;
   loadScript?: string;
@@ -49,11 +47,8 @@ class SettingsReader {
     }
   }
 
-  getSetting(setting: keyof Settings) {
-    if (!this.settings) {
-      return null;
-    }
-    return this.settings[setting];
+  getSetting<K extends keyof Settings>(setting: K): Settings[K] | undefined {
+    return this.settings?.[setting];
   }
 }
 
